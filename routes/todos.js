@@ -20,6 +20,19 @@ router.get('/', auth.authenticateToken, async (req, res) => {
     }
 });
 
+router.get('/dashboardcount/:cdate', auth.authenticateToken, async (req, res) => {
+    const cdate = req.params.cdate;
+    const signedin_user = res.locals.id;
+    try {
+        const connection = await pool;
+        const [rows, fields] = await connection.query("SELECT (SELECT count(t.id) from todo t where created_by = ? and priority = 'Low') as low_todo, (SELECT count(t.id) from todo t where created_by = ? and priority = 'Medium') as medium_todo, (SELECT count(t.id) from todo t where created_by = ? and priority = 'High') as high_todo, (SELECT count(t.id) from todo t where created_by = ? and status = 'Complete') as complete_todo, (SELECT count(t.id) from todo t where created_by = ? and status <> 'Complete' and date(due_date) < ?) as passed_duedate_todo",[signedin_user,signedin_user,signedin_user,signedin_user,signedin_user, cdate]);
+        res.json(rows);
+    } catch (error) {
+        logger.error('Error fetching dashboardcount:', error);
+        res.status(500).json({ error: 'Error fetching dashboardcount' });
+    }
+});
+
 
 
 router.post(
